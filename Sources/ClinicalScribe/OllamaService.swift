@@ -36,7 +36,7 @@ class OllamaService: ObservableObject {
     """
 
     /// Generate a clinical note from a doctor-patient conversation
-    func generateNote(conversation: String, model: String = "gpt-oss-20b") async {
+    func generateNote(conversation: String, model: String = "gpt-oss:20b") async {
         isGenerating = true
         response = ""
         errorMessage = nil
@@ -81,10 +81,10 @@ class OllamaService: ObservableObject {
 
             // If no models available, provide defaults
             if availableModels.isEmpty {
-                availableModels = ["gpt-oss-20b", "mistral:7b", "llama3.2:latest"]
+                availableModels = ["gpt-oss:20b"]
             }
         } catch {
-            availableModels = ["gpt-oss-20b", "mistral:7b", "llama3.2:latest"]
+            availableModels = ["gpt-oss:20b"]
             isConnected = false
             errorMessage = "Cannot connect to Ollama. Make sure 'ollama serve' is running."
         }

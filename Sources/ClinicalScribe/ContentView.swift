@@ -3,7 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var ollama = OllamaService()
     @State private var conversation = ""
-    @State private var selectedModel = "gpt-oss-20b"
+    @State private var selectedModel = "gpt-oss:20b"
     @State private var generationTask: Task<Void, Never>?
 
     var body: some View {
