@@ -25,32 +25,28 @@ This takes **2+ hours per day** of typing. What if AI could do it for you?
 Here's exactly what happens when you click "Generate":
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           YOUR MAC (Everything stays here)                  │
-│                                                                             │
-│  ┌──────────────┐      ┌──────────────┐      ┌──────────────────────────┐  │
-│  │              │      │              │      │                          │  │
-│  │   You paste  │ ───► │  Clinical    │ ───► │   Ollama Server          │  │
-│  │ conversation │      │  Scribe App  │      │   (localhost:11434)      │  │
-│  │              │      │              │      │                          │  │
-│  └──────────────┘      └──────────────┘      └────────────┬─────────────┘  │
-│                                                           │                 │
-│                                                           ▼                 │
-│  ┌──────────────┐      ┌──────────────┐      ┌──────────────────────────┐  │
-│  │              │      │              │      │                          │  │
-│  │   You copy   │ ◄─── │  Note streams│ ◄─── │   AI Model (gpt-oss-20b) │  │
-│  │   the note   │      │  word-by-word│      │   Running on your Mac    │  │
-│  │              │      │              │      │                          │  │
-│  └──────────────┘      └──────────────┘      └──────────────────────────┘  │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    │
-                            ┌───────▼───────┐
-                            │   Internet    │
-                            │   (NOT USED)  │
-                            │      ❌       │
-                            └───────────────┘
+                    ╔═══════════════════════════════════════════════════════════╗
+                    ║              YOUR MAC (Everything stays here)             ║
+                    ╠═══════════════════════════════════════════════════════════╣
+                    ║                                                           ║
+                    ║   ┌─────────────┐    ┌─────────────┐    ┌─────────────┐   ║
+                    ║   │  You paste  │    │  Clinical   │    │   Ollama    │   ║
+                    ║   │ conversation│───>│ Scribe App  │───>│   Server    │   ║
+                    ║   └─────────────┘    └─────────────┘    └──────┬──────┘   ║
+                    ║                                                │          ║
+                    ║                                                ▼          ║
+                    ║   ┌─────────────┐    ┌─────────────┐    ┌─────────────┐   ║
+                    ║   │  You copy   │    │Note streams │    │  AI Model   │   ║
+                    ║   │  the note   │<───│ word-by-word│<───│(gpt-oss-20b)│   ║
+                    ║   └─────────────┘    └─────────────┘    └─────────────┘   ║
+                    ║                                                           ║
+                    ╚═══════════════════════════════════════════════════════════╝
+                    
+                                          ┌─────────────┐
+                                          │  Internet   │
+                                          │ (NOT USED)  │
+                                          │      ❌      │
+                                          └─────────────┘
 ```
 
 **Key point**: Your patient data NEVER leaves your computer.
@@ -60,42 +56,36 @@ Here's exactly what happens when you click "Generate":
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        Clinical Scribe App                          │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ┌─────────────────────┐         ┌─────────────────────────────┐   │
-│  │                     │         │                             │   │
-│  │   ContentView.swift │ ◄─────► │   OllamaService.swift       │   │
-│  │   (User Interface)  │         │   (API Communication)       │   │
-│  │                     │         │                             │   │
-│  │  • Left panel:      │         │  • Connects to Ollama       │   │
-│  │    conversation     │         │  • Sends prompts            │   │
-│  │    input            │         │  • Streams responses        │   │
-│  │                     │         │  • Handles errors           │   │
-│  │  • Right panel:     │         │                             │   │
-│  │    clinical note    │         │                             │   │
-│  │    output           │         │                             │   │
-│  │                     │         │                             │   │
-│  └─────────────────────┘         └──────────────┬──────────────┘   │
-│                                                  │                  │
-└──────────────────────────────────────────────────┼──────────────────┘
-                                                   │
-                                          HTTP API │ localhost:11434
-                                                   │
-                              ┌────────────────────▼────────────────────┐
-                              │           Ollama Server                 │
-                              ├─────────────────────────────────────────┤
-                              │                                         │
-                              │  ┌─────────────────────────────────┐   │
-                              │  │      AI Model (gpt-oss-20b)     │   │
-                              │  │                                 │   │
-                              │  │  • 20 billion parameters        │   │
-                              │  │  • Runs on Apple Silicon        │   │
-                              │  │  • Medical knowledge built-in   │   │
-                              │  └─────────────────────────────────┘   │
-                              │                                         │
-                              └─────────────────────────────────────────┘
+╔═══════════════════════════════════════════════════════════════════════╗
+║                         Clinical Scribe App                           ║
+╠═══════════════════════════════════════════════════════════════════════╣
+║                                                                       ║
+║   ┌───────────────────────┐       ┌───────────────────────────┐       ║
+║   │   ContentView.swift   │       │   OllamaService.swift     │       ║
+║   │   (User Interface)    │<─────>│   (API Communication)     │       ║
+║   │                       │       │                           │       ║
+║   │  • Left: conversation │       │  • Connects to Ollama     │       ║
+║   │  • Right: clinical    │       │  • Sends prompts          │       ║
+║   │    note output        │       │  • Streams responses      │       ║
+║   └───────────────────────┘       └─────────────┬─────────────┘       ║
+║                                                 │                     ║
+╚═════════════════════════════════════════════════╪═════════════════════╝
+                                                  │
+                                         HTTP API │ localhost:11434
+                                                  │
+                    ╔═════════════════════════════╧═════════════════════════════╗
+                    ║                      Ollama Server                        ║
+                    ╠═══════════════════════════════════════════════════════════╣
+                    ║                                                           ║
+                    ║              ┌───────────────────────────┐                ║
+                    ║              │   AI Model (gpt-oss-20b)  │                ║
+                    ║              │                           │                ║
+                    ║              │  • 20 billion parameters  │                ║
+                    ║              │  • Runs on Apple Silicon  │                ║
+                    ║              │  • Medical knowledge      │                ║
+                    ║              └───────────────────────────┘                ║
+                    ║                                                           ║
+                    ╚═══════════════════════════════════════════════════════════╝
 ```
 
 ---
@@ -117,28 +107,28 @@ The AI creates structured clinical notes with these sections:
 ## What It Looks Like
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  Clinical Scribe                                        [●] Online  │
-├──────────────────────────────┬──────────────────────────────────────┤
-│                              │                                      │
-│  Doctor-Patient Conversation │  Clinical Note     [Model ▼]        │
-│                              │                                      │
-│  ┌────────────────────────┐  │  ┌────────────────────────────────┐ │
-│  │                        │  │  │                                │ │
-│  │ Doctor: What brings    │  │  │ CHIEF COMPLAINT                │ │
-│  │ you in today?          │  │  │ Persistent cough x 2 weeks     │ │
-│  │                        │  │  │                                │ │
-│  │ Patient: I've had a    │  │  │ HISTORY OF PRESENT ILLNESS     │ │
-│  │ cough for two weeks... │  │  │ 45-year-old presents with      │ │
-│  │                        │  │  │ persistent dry cough x 2 wks...│ │
-│  │ Doctor: Any fever?     │  │  │                                │ │
-│  │                        │  │  │ ASSESSMENT AND PLAN            │ │
-│  │ Patient: No fever...   │  │  │ 1. Post-viral bronchitis       │ │
-│  │                        │  │  │    - Albuterol inhaler BID     │ │
-│  └────────────────────────┘  │  └────────────────────────────────┘ │
-│                              │                                      │
-│  [Load Sample]    500 chars  │           [Generate] [Copy]  89 wds │
-└──────────────────────────────┴──────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Clinical Scribe                                          [●] Online   │
+├────────────────────────────────────┬────────────────────────────────────┤
+│                                    │                                    │
+│  Doctor-Patient Conversation       │  Clinical Note        [Model ▼]   │
+│                                    │                                    │
+│  ┌──────────────────────────────┐  │  ┌──────────────────────────────┐ │
+│  │                              │  │  │                              │ │
+│  │ Doctor: What brings you in? │  │  │ CHIEF COMPLAINT              │ │
+│  │                              │  │  │ Persistent cough x 2 weeks   │ │
+│  │ Patient: I've had a cough   │  │  │                              │ │
+│  │ for two weeks...            │  │  │ HISTORY OF PRESENT ILLNESS   │ │
+│  │                              │  │  │ 45-year-old presents with    │ │
+│  │ Doctor: Any fever?          │  │  │ dry cough for 2 weeks...     │ │
+│  │                              │  │  │                              │ │
+│  │ Patient: No fever...        │  │  │ ASSESSMENT AND PLAN          │ │
+│  │                              │  │  │ 1. Post-viral bronchitis     │ │
+│  │                              │  │  │    - Albuterol inhaler BID   │ │
+│  └──────────────────────────────┘  │  └──────────────────────────────┘ │
+│                                    │                                    │
+│  [Load Sample]          500 chars  │            [Generate] [Copy] 89w  │
+└────────────────────────────────────┴────────────────────────────────────┘
 ```
 
 ---
@@ -150,7 +140,7 @@ The AI creates structured clinical notes with these sections:
 | **Clinical Note** | The official medical record a doctor writes after seeing a patient |
 | **LLM** | Large Language Model - AI that can read and write text (like ChatGPT) |
 | **Ollama** | Free software that runs AI models on your own computer |
-| **localhost:11434** | The address where Ollama runs on your Mac (only accessible from your computer) |
+| **localhost:11434** | The address where Ollama runs on your Mac (only accessible locally) |
 | **Streaming** | The note appears word-by-word instead of all at once |
 | **Parameters** | The "brain size" of an AI model (20 billion = very capable) |
 
