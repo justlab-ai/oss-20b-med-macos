@@ -143,15 +143,9 @@ struct ContentView: View {
                 }
             }
 
-            // Footer with word count
+            // Footer with generation status and metrics
             HStack {
-                if ollama.isGenerating {
-                    ProgressView()
-                        .scaleEffect(0.6)
-                    Text("Generating...")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
+                generationStatusView
                 Spacer()
                 Text("\(wordCount(ollama.response)) words")
                     .font(.caption)
@@ -171,6 +165,104 @@ struct ContentView: View {
             Text(ollama.isConnected ? "Connected" : "Offline")
                 .font(.caption)
                 .foregroundColor(.secondary)
+        }
+    }
+
+    @ViewBuilder
+    private var generationStatusView: some View {
+        switch ollama.generationPhase {
+        case .idle:
+            EmptyView()
+
+        case .connecting:
+            HStack(spacing: 6) {
+                ProgressView()
+                    .scaleEffect(0.6)
+                Text("⏳ Starting... \(formattedElapsedTime)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Text("(loading model into memory)")
+                    .font(.caption2)
+                    .foregroundColor(.secondary.opacity(0.7))
+            }
+
+        case .loadingModel:
+            HStack(spacing: 6) {
+                ProgressView()
+                    .scaleEffect(0.6)
+                Text("⏳ Loading model... \(formattedElapsedTime)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Text("(first load may take 20-60s)")
+                    .font(.caption2)
+                    .foregroundColor(.secondary.opacity(0.7))
+            }
+
+        case .processingPrompt:
+            HStack(spacing: 6) {
+                ProgressView()
+                    .scaleEffect(0.6)
+                Text("⏳ Processing prompt...")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+        case .generating:
+            HStack(spacing: 6) {
+                ProgressView()
+                    .scaleEffect(0.6)
+                Text("✨ Generating")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                if ollama.tokensPerSecond > 0 {
+                    Text("(\(Int(ollama.tokensPerSecond)) tok/s)")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                }
+                Text("• \(formattedElapsedTime)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+        case .complete:
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(.green)
+                    .font(.caption)
+                Text("✓ Done")
+                    .font(.caption)
+                    .foregroundColor(.green)
+                Text("• \(formattedElapsedTime)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                if ollama.tokensGenerated > 0 {
+                    Text("• \(ollama.tokensGenerated) tokens")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+        case .failed(let error):
+            HStack(spacing: 6) {
+                Image(systemName: "exclamationmark.circle.fill")
+                    .foregroundColor(.red)
+                    .font(.caption)
+                Text("✗ Failed: \(error)")
+                    .font(.caption)
+                    .foregroundColor(.red)
+                    .lineLimit(1)
+            }
+        }
+    }
+
+    private var formattedElapsedTime: String {
+        let seconds = ollama.elapsedTime
+        if seconds < 60 {
+            return String(format: "%.1fs", seconds)
+        } else {
+            let minutes = Int(seconds) / 60
+            let remainingSeconds = Int(seconds) % 60
+            return "\(minutes)m \(remainingSeconds)s"
         }
     }
 

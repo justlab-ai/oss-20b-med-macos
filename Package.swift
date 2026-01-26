@@ -14,15 +14,11 @@ let package = Package(
             targets: ["ClinicalScribe"]
         ),
     ],
-    dependencies: [
-        .package(url: "https://github.com/mattt/ollama-swift", branch: "main"),
-    ],
+    dependencies: [],
     targets: [
         .executableTarget(
             name: "ClinicalScribe",
-            dependencies: [
-                .product(name: "Ollama", package: "ollama-swift"),
-            ],
+            dependencies: [],
             path: "Sources/ClinicalScribe"
         ),
     ]

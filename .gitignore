@@ -41,3 +41,6 @@ playground.xcworkspace
 # Misc
 *.log
 *.tmp
+
+# Build output
+build/
