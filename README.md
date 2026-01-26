@@ -14,32 +14,103 @@ Imagine you're a doctor. After every patient visit, you need to write detailed n
 
 This takes **2+ hours per day** of typing. What if AI could do it for you?
 
-**Clinical Scribe** listens to (or reads) a doctor-patient conversation and automatically writes a professional clinical note - all without sending any data to the cloud.
+**Clinical Scribe** reads a doctor-patient conversation and automatically writes a professional clinical note - all without sending any data to the cloud.
 
 ---
 
-## Key Terms Explained
+## How It Works
 
-New to AI or healthcare? Here's what you need to know:
+### Data Flow
 
-| Term | What It Means |
-|------|---------------|
-| **Clinical Note** | The official medical record a doctor writes after seeing a patient |
-| **LLM** | Large Language Model - AI that can read and write text (like ChatGPT) |
-| **Ollama** | Free software that runs AI models on your own computer |
-| **Local/On-device** | Everything runs on YOUR computer - no data sent to the internet |
-| **Privacy-first** | Patient data never leaves your machine |
+Here's exactly what happens when you click "Generate":
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           YOUR MAC (Everything stays here)                  │
+│                                                                             │
+│  ┌──────────────┐      ┌──────────────┐      ┌──────────────────────────┐  │
+│  │              │      │              │      │                          │  │
+│  │   You paste  │ ───► │  Clinical    │ ───► │   Ollama Server          │  │
+│  │ conversation │      │  Scribe App  │      │   (localhost:11434)      │  │
+│  │              │      │              │      │                          │  │
+│  └──────────────┘      └──────────────┘      └────────────┬─────────────┘  │
+│                                                           │                 │
+│                                                           ▼                 │
+│  ┌──────────────┐      ┌──────────────┐      ┌──────────────────────────┐  │
+│  │              │      │              │      │                          │  │
+│  │   You copy   │ ◄─── │  Note streams│ ◄─── │   AI Model (gpt-oss-20b) │  │
+│  │   the note   │      │  word-by-word│      │   Running on your Mac    │  │
+│  │              │      │              │      │                          │  │
+│  └──────────────┘      └──────────────┘      └──────────────────────────┘  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │
+                            ┌───────▼───────┐
+                            │   Internet    │
+                            │   (NOT USED)  │
+                            │      ❌       │
+                            └───────────────┘
+```
+
+**Key point**: Your patient data NEVER leaves your computer.
 
 ---
 
-## Why This Matters
+## Architecture
 
-| Problem | Our Solution |
-|---------|--------------|
-| Doctors waste hours on paperwork | AI writes the notes in seconds |
-| Cloud AI services see your data | Everything stays on your Mac |
-| Expensive enterprise software | 100% free and open source |
-| Complex setup required | Just install and run |
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Clinical Scribe App                          │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌─────────────────────┐         ┌─────────────────────────────┐   │
+│  │                     │         │                             │   │
+│  │   ContentView.swift │ ◄─────► │   OllamaService.swift       │   │
+│  │   (User Interface)  │         │   (API Communication)       │   │
+│  │                     │         │                             │   │
+│  │  • Left panel:      │         │  • Connects to Ollama       │   │
+│  │    conversation     │         │  • Sends prompts            │   │
+│  │    input            │         │  • Streams responses        │   │
+│  │                     │         │  • Handles errors           │   │
+│  │  • Right panel:     │         │                             │   │
+│  │    clinical note    │         │                             │   │
+│  │    output           │         │                             │   │
+│  │                     │         │                             │   │
+│  └─────────────────────┘         └──────────────┬──────────────┘   │
+│                                                  │                  │
+└──────────────────────────────────────────────────┼──────────────────┘
+                                                   │
+                                          HTTP API │ localhost:11434
+                                                   │
+                              ┌────────────────────▼────────────────────┐
+                              │           Ollama Server                 │
+                              ├─────────────────────────────────────────┤
+                              │                                         │
+                              │  ┌─────────────────────────────────┐   │
+                              │  │      AI Model (gpt-oss-20b)     │   │
+                              │  │                                 │   │
+                              │  │  • 20 billion parameters        │   │
+                              │  │  • Runs on Apple Silicon        │   │
+                              │  │  • Medical knowledge built-in   │   │
+                              │  └─────────────────────────────────┘   │
+                              │                                         │
+                              └─────────────────────────────────────────┘
+```
+
+---
+
+## What the App Generates
+
+The AI creates structured clinical notes with these sections:
+
+| Section | What It Contains | Example |
+|---------|------------------|---------|
+| **Chief Complaint** | Why the patient came in | "Persistent cough x 2 weeks" |
+| **History of Present Illness** | Details about the problem | "45-year-old male presents with dry cough..." |
+| **Review of Systems** | Other symptoms mentioned | "Denies fever, chills. Reports mild fatigue." |
+| **Physical Examination** | Exam findings discussed | "Lungs: mild wheezing on right side" |
+| **Assessment & Plan** | Diagnosis + treatment | "Post-viral bronchitis. Start albuterol inhaler." |
 
 ---
 
@@ -47,41 +118,45 @@ New to AI or healthcare? Here's what you need to know:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│  Clinical Scribe                                                    │
+│  Clinical Scribe                                        [●] Online  │
 ├──────────────────────────────┬──────────────────────────────────────┤
 │                              │                                      │
-│  PASTE CONVERSATION HERE     │   AI-GENERATED NOTE APPEARS HERE    │
+│  Doctor-Patient Conversation │  Clinical Note     [Model ▼]        │
 │                              │                                      │
-│  Doctor: What brings you in? │   CHIEF COMPLAINT                   │
-│  Patient: I've had a cough   │   Persistent cough x 2 weeks        │
-│  for about two weeks...      │                                      │
-│                              │   HISTORY OF PRESENT ILLNESS        │
-│                              │   45-year-old presents with...      │
+│  ┌────────────────────────┐  │  ┌────────────────────────────────┐ │
+│  │                        │  │  │                                │ │
+│  │ Doctor: What brings    │  │  │ CHIEF COMPLAINT                │ │
+│  │ you in today?          │  │  │ Persistent cough x 2 weeks     │ │
+│  │                        │  │  │                                │ │
+│  │ Patient: I've had a    │  │  │ HISTORY OF PRESENT ILLNESS     │ │
+│  │ cough for two weeks... │  │  │ 45-year-old presents with      │ │
+│  │                        │  │  │ persistent dry cough x 2 wks...│ │
+│  │ Doctor: Any fever?     │  │  │                                │ │
+│  │                        │  │  │ ASSESSMENT AND PLAN            │ │
+│  │ Patient: No fever...   │  │  │ 1. Post-viral bronchitis       │ │
+│  │                        │  │  │    - Albuterol inhaler BID     │ │
+│  └────────────────────────┘  │  └────────────────────────────────┘ │
 │                              │                                      │
-│  [Load Sample]               │              [Generate] [Copy]      │
+│  [Load Sample]    500 chars  │           [Generate] [Copy]  89 wds │
 └──────────────────────────────┴──────────────────────────────────────┘
 ```
 
-**Left side**: Paste the conversation  
-**Right side**: Get a professional clinical note  
-
 ---
 
-## Features
+## Key Terms Explained
 
-| Feature | What It Does |
-|---------|--------------|
-| **Split Panel View** | See conversation and note side-by-side |
-| **Real-time Generation** | Watch the note write itself word-by-word |
-| **Multiple AI Models** | Choose from different AI models based on your needs |
-| **100% Private** | All processing happens on YOUR Mac - nothing sent online |
-| **One-Click Copy** | Easily copy notes to paste into medical records |
+| Term | What It Means |
+|------|---------------|
+| **Clinical Note** | The official medical record a doctor writes after seeing a patient |
+| **LLM** | Large Language Model - AI that can read and write text (like ChatGPT) |
+| **Ollama** | Free software that runs AI models on your own computer |
+| **localhost:11434** | The address where Ollama runs on your Mac (only accessible from your computer) |
+| **Streaming** | The note appears word-by-word instead of all at once |
+| **Parameters** | The "brain size" of an AI model (20 billion = very capable) |
 
 ---
 
 ## Requirements
-
-Before you start, you'll need:
 
 | Requirement | Details |
 |-------------|---------|
@@ -92,13 +167,11 @@ Before you start, you'll need:
 
 ---
 
-## Installation Guide
+## Installation
 
 ### Step 1: Install Ollama
 
-Ollama is free software that runs AI models on your Mac.
-
-**Option A: Using Homebrew (if you have it)**
+**Option A: Using Homebrew**
 ```bash
 brew install ollama
 ```
@@ -106,141 +179,92 @@ brew install ollama
 **Option B: Direct Download**
 1. Go to [ollama.ai](https://ollama.ai)
 2. Click "Download for macOS"
-3. Open the downloaded file and drag to Applications
+3. Drag to Applications
 
-### Step 2: Start Ollama
+### Step 2: Start Ollama Server
 
-Open Terminal (search "Terminal" in Spotlight) and run:
 ```bash
 ollama serve
 ```
-
-Keep this window open - Ollama needs to run in the background.
+Keep this terminal window open.
 
 ### Step 3: Download an AI Model
 
-In a **new** Terminal window, download the AI model:
-
+In a **new** terminal window:
 ```bash
-# Recommended: Best quality for medical notes
+# Recommended (best quality)
 ollama pull gpt-oss-20b
 
-# Alternative: Faster but slightly lower quality
+# Or faster alternative
 ollama pull mistral:7b
 ```
 
-**Note**: The first download takes 10-30 minutes depending on your internet speed.
-
-### Step 4: Install Clinical Scribe
+### Step 4: Run Clinical Scribe
 
 ```bash
-# Download the app
 git clone https://github.com/justlab-ai/oss-20b-med-macos.git
 cd oss-20b-med-macos
-
-# Open in Xcode
 open Package.swift
 ```
 
-In Xcode:
-1. Wait for packages to download (about 1 minute)
-2. Press **Cmd + R** to build and run
-
-**Don't have Xcode?** Download it free from the Mac App Store.
-
----
-
-## How to Use
-
-1. **Make sure Ollama is running** (Step 2 above)
-
-2. **Open Clinical Scribe**
-
-3. **Paste a conversation** in the left panel
-   - Or click "Load Sample" to try an example
-
-4. **Select your AI model** from the dropdown
-   - `gpt-oss-20b` = Best quality (slower)
-   - `mistral:7b` = Good quality (faster)
-
-5. **Click "Generate"** and watch the magic happen!
-
-6. **Click "Copy"** to copy the note to your clipboard
+In Xcode, press **Cmd + R** to build and run.
 
 ---
 
 ## Model Comparison
 
-Which AI model should you use?
-
 | Model | Quality | Speed | Best For |
 |-------|---------|-------|----------|
-| **gpt-oss-20b** | ⭐⭐⭐⭐⭐ Best | ~30 seconds | Final notes, accuracy matters |
-| **mistral:7b** | ⭐⭐⭐⭐ Good | ~5 seconds | Quick drafts, testing |
-| **llama3.2** | ⭐⭐⭐⭐ Good | ~6 seconds | General use |
+| **gpt-oss-20b** | ⭐⭐⭐⭐⭐ | ~30 sec | Final notes |
+| **mistral:7b** | ⭐⭐⭐⭐ | ~5 sec | Quick drafts |
+| **llama3.2** | ⭐⭐⭐⭐ | ~6 sec | General use |
 
-**Our recommendation**: Start with `mistral:7b` to test, use `gpt-oss-20b` for real work.
+---
+
+## Project Structure
+
+```
+oss-20b-med-macos/
+├── Package.swift                    # Project configuration
+├── Sources/ClinicalScribe/
+│   ├── ClinicalScribeApp.swift      # App entry point
+│   ├── ContentView.swift            # User interface (split panel)
+│   └── OllamaService.swift          # Ollama API communication
+└── README.md
+```
 
 ---
 
 ## Troubleshooting
 
-### "Connection refused" error
-**Problem**: Ollama isn't running  
-**Solution**: Open Terminal and run `ollama serve`
-
-### "Model not found" error
-**Problem**: You haven't downloaded the model yet  
-**Solution**: Run `ollama pull gpt-oss-20b` (or your chosen model)
-
-### App won't build in Xcode
-**Problem**: Packages didn't download  
-**Solution**: In Xcode, go to File → Packages → Reset Package Caches
-
-### Generation is very slow
-**Problem**: Your Mac may not have enough RAM  
-**Solution**: Try a smaller model like `mistral:7b`
+| Problem | Solution |
+|---------|----------|
+| "Connection refused" | Run `ollama serve` in terminal |
+| "Model not found" | Run `ollama pull gpt-oss-20b` |
+| App won't build | Xcode → File → Packages → Reset Package Caches |
+| Generation is slow | Try smaller model: `mistral:7b` |
 
 ---
 
-## Project Files
+## Privacy & Security
 
-```
-oss-20b-med-macos/
-├── Package.swift              # App configuration
-├── Sources/ClinicalScribe/
-│   ├── ClinicalScribeApp.swift  # Where the app starts
-│   ├── ContentView.swift        # The main screen you see
-│   └── OllamaService.swift      # Code that talks to Ollama
-└── README.md                    # You are here!
-```
-
----
-
-## FAQ
-
-**Q: Is my patient data safe?**  
-A: Yes! Everything runs locally on your Mac. No data is ever sent to the internet.
-
-**Q: Is this free?**  
-A: Yes, 100% free and open source.
-
-**Q: Can I use this for real patients?**  
-A: This is a research prototype. Always review AI-generated notes before using in clinical practice.
-
-**Q: What if I don't have a Mac?**  
-A: We're working on Windows and iOS versions. Stay tuned!
+| Question | Answer |
+|----------|--------|
+| Is my data sent to the cloud? | **No** - everything runs locally |
+| Can anyone see my patient data? | **No** - data never leaves your Mac |
+| Do I need internet? | **No** - works completely offline |
+| Is it HIPAA compliant? | Local processing helps, but consult your compliance officer |
 
 ---
 
 ## Related Projects
 
-- [oss-20b-aci-bench](https://github.com/justlab-ai/oss-20b-aci-bench) - See how we tested these AI models
-
-## Contributors
-
-Built by the [JustLab AI](https://github.com/justlab-ai) team.
+- [oss-20b-aci-bench](https://github.com/justlab-ai/oss-20b-aci-bench) - How we tested these AI models
 
 ## License
 
 MIT License - Free to use and modify!
+
+---
+
+Built by [JustLab AI](https://github.com/justlab-ai)
